@@ -7,7 +7,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
 
     <uses-sdk
-        android:minSdkVersion="10"
+        android:minSdkVersion="7"
         android:targetSdkVersion="19" />
 
     <application
@@ -26,11 +26,11 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name="io.github.mabdrabo.sccop.Bluetooth"
-            android:label="@string/title_activity_bluetooth" >
-        </activity>
-        
+        <!--<activity-->
+            <!--android:name="io.github.mabdrabo.sccop.Bluetooth"-->
+            <!--android:label="@string/title_activity_bluetooth" >-->
+        <!--</activity>-->
+
     </application>
 
 </manifest>
