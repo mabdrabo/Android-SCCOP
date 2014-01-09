@@ -1,6 +1,6 @@
 package io.github.mabdrabo.sccop;
 
-import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
@@ -10,19 +10,29 @@ import android.widget.GridView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
-import java.lang.reflect.Method;
+import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
 public class MainActivity extends ActionBarActivity {
 
-    private final String[] namesList = new String[] {"RPM", "Speed", "Temp", "Throt"};
-    private final String[] unitsList = new String[] {"1000/min", "Km/s", "C", ""};
+    private final String[] namesList = new String[] {"RPM", "Speed", "Temp"};
+    private final String[] unitsList = new String[] {"1000/min", "Km/s", "C"};
     private String[] valuesList = new String[namesList.length];
     private Bluetooth bluetooth;
-    MainActivity mainActivity;
 
 
     @Override
@@ -30,28 +40,18 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mainActivity = this;
         ToggleButton toggleButton = (ToggleButton)findViewById(R.id.toggleButton);
-        toggleButton.setOnClickListener(new View.OnClickListener()
-        {
-            public void onClick(View v)
-            {
-//                try {
-//                    Method myListeningFunction = MainActivity.class.getMethod("myListenForData", null);
-//                    bluetooth = new Bluetooth(mainActivity, getApplicationContext(), "SCCOP-BT", myListeningFunction);
-//                } catch (NoSuchMethodException e) {
-//                    e.printStackTrace();
-//                    Toast.makeText(getBaseContext(), "No such method exception!", Toast.LENGTH_LONG);
-//                    bluetooth = new Bluetooth(mainActivity, getApplicationContext(), "SCCOP-BT", null);
-//                }
-                bluetooth = new Bluetooth(mainActivity, getApplicationContext(), "SCCOP-BT", null);
-                if (bluetooth.isConnected)
-                    myListenForData();
+        toggleButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+//                bluetooth = new Bluetooth(getApplicationContext(), "SCCOP-BT");
+//                if (bluetooth.isConnected)
+//                    myListenForData();
+
+                new updateOnlineDB().execute("tessttt");
+
             }
         });
 
-//        Intent intent = new Intent().setClass(this, Bluetooth.class);
-//        startActivity(intent);
     }
 
 
@@ -59,8 +59,8 @@ public class MainActivity extends ActionBarActivity {
     protected void onResume() {
         super.onResume();
         GridView gridView = (GridView) findViewById(R.id.gridView);
-        gridView.setAdapter(new GridItemAdapter(this, namesList, valuesList, unitsList) {});
-
+        gridView.setAdapter(new GridItemAdapter(this, namesList, valuesList, unitsList) {
+        });
     }
 
 
@@ -120,5 +120,91 @@ public class MainActivity extends ActionBarActivity {
         });
 
         bluetooth.workerThread.start();
+    }
+
+
+    private class updateOnlineDB extends AsyncTask<String, Void, String> {
+        private static final String TAG = "SCCOP";
+
+        @Override
+        protected String doInBackground(String... params) {
+            //Here you have to make the loading / parsing tasks
+            //Don't call any UI actions here. For example a Toast.show() this will couse Exceptions
+            // UI stuff you have to make in onPostExecute method
+
+            DefaultHttpClient client = new DefaultHttpClient();
+//            HttpGet get = new HttpGet("http://sccop.herokuapp.com/mobile/update");
+            HttpPost post = new HttpPost("http://sccop.herokuapp.com/mobile/update");
+
+            JSONObject holder = new JSONObject();
+            JSONObject projectObj = new JSONObject();
+            String name = params[0];
+
+            try {
+                Log.d(TAG, "attempting to post project");
+                projectObj.put("name", name);
+                Log.d(TAG, "projectName: " + name);
+                holder.put("project", projectObj);
+                Log.e("Event JSON", "Event JSON = "+ holder.toString());
+                StringEntity se = new StringEntity(holder.toString());
+                post.setEntity(se);
+                post.setHeader("Accept", "application/json");
+                post.setHeader("Content-Type","application/json");
+//                get.setHeader("Content-Type","application/json");
+
+            } catch (UnsupportedEncodingException e) {
+                Log.e("Error: UnsupportedEncodingException",""+e);
+                e.printStackTrace();
+            } catch (JSONException js) {
+                Log.e("Error: JSONException",""+js);
+                js.printStackTrace();
+            }
+
+            HttpResponse response;
+
+            try {
+                response = client.execute(post);
+//                response = client.execute(get);
+            } catch (ClientProtocolException e) {
+                e.printStackTrace();
+                Log.e("ClientProtocol",""+e);
+                return null;
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e("IO",""+e);
+                return null;
+            }
+
+            HttpEntity entity = response.getEntity();
+
+            if (entity != null) {
+                try {
+                    String result = EntityUtils.toString(entity);
+                    entity.consumeContent();
+                    return result;
+                } catch (IOException e) {
+                    Log.e("IO E",""+e);
+                    e.printStackTrace();
+                }
+            }
+            return "empty";
+        }
+
+        @Override
+        protected void onPreExecute() {
+            // This method will called during doInBackground is in process
+            // Here you can for example show a ProgressDialog
+            Toast.makeText(getApplicationContext(), "processing", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            // onPostExecute is called when doInBackground finished
+            // Here you can for example fill your Listview with the content loaded in doInBackground method
+            Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
+            Log.e("SCCOP", result);
+        }
     }
 }

@@ -28,7 +28,6 @@ public class Bluetooth {
 
     Context ApplicationContext;
     String deviceName;
-    Method listeningFunction;
     BluetoothAdapter mBluetoothAdapter;
     BluetoothSocket mmSocket;
     BluetoothDevice mmDevice;
@@ -40,43 +39,15 @@ public class Bluetooth {
     volatile boolean stopWorker;
     boolean isConnected;
 
-    public Bluetooth(MainActivity mainActivity, Context ApplicationContext, String deviceName, Method listeningFunction) {
+    public Bluetooth(Context ApplicationContext, String deviceName) {
         this.ApplicationContext = ApplicationContext;
         this.deviceName = deviceName;
-        this.listeningFunction = listeningFunction;
         this.isConnected = false;
         if (this.search())
             if (this.connect())
                 this.isConnected = true;
-//                mainActivity.myListenForData();
-//                if (this.listeningFunction == null)
-//                    listenForData();
-//                else
-//                    try {
-//                        this.listeningFunction.invoke(this);
-//                    } catch (IllegalAccessException e) {
-//                        e.printStackTrace();
-//                    } catch (InvocationTargetException e) {
-//                        e.printStackTrace();
-//                    }
     }
 
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_bluetooth);
-//        this.deviceName = "SCCOP-BT";
-//
-//        ((Button) findViewById(R.id.open)).setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                search();
-//                connect();
-//                listenForData();
-//            }
-//        });
-//
-//    }
 
     public boolean search() {
         return this.search(this.deviceName);
