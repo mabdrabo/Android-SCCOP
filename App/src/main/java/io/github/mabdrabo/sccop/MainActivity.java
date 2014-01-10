@@ -10,6 +10,7 @@ import android.widget.GridView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -17,11 +18,16 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicHeader;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,11 +49,11 @@ public class MainActivity extends ActionBarActivity {
         ToggleButton toggleButton = (ToggleButton)findViewById(R.id.toggleButton);
         toggleButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-//                bluetooth = new Bluetooth(getApplicationContext(), "SCCOP-BT");
-//                if (bluetooth.isConnected)
-//                    myListenForData();
+                bluetooth = new Bluetooth(getApplicationContext(), "SCCOP-BT");
+                if (bluetooth.isConnected)
+                    myListenForData();
 
-                new updateOnlineDB().execute("tessttt");
+                new updateOnlineDB().execute("");
 
             }
         });
@@ -133,60 +139,68 @@ public class MainActivity extends ActionBarActivity {
             // UI stuff you have to make in onPostExecute method
 
             DefaultHttpClient client = new DefaultHttpClient();
-//            HttpGet get = new HttpGet("http://sccop.herokuapp.com/mobile/update");
-            HttpPost post = new HttpPost("http://sccop.herokuapp.com/mobile/update");
+            HttpGet get = new HttpGet("http://sccop.herokuapp.com/api/log/add/?username=01005574388&rpm=3452&speed=93&temp=27");
+//            HttpPost post = new HttpPost("http://sccop.herokuapp.com/mobile/update");
 
             JSONObject holder = new JSONObject();
             JSONObject projectObj = new JSONObject();
             String name = params[0];
 
             try {
-                Log.d(TAG, "attempting to post project");
                 projectObj.put("name", name);
-                Log.d(TAG, "projectName: " + name);
                 holder.put("project", projectObj);
-                Log.e("Event JSON", "Event JSON = "+ holder.toString());
+                Log.e(TAG, "Event JSON = "+ holder.toString());
                 StringEntity se = new StringEntity(holder.toString());
-                post.setEntity(se);
-                post.setHeader("Accept", "application/json");
-                post.setHeader("Content-Type","application/json");
-//                get.setHeader("Content-Type","application/json");
+                se.setContentType(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
+//                post.setEntity(se);
+//                post.setHeader("Accept", "application/json");
+//                post.setHeader("Content-Type","application/json");
+                get.setHeader("Content-Type","application/json");
+
+                HttpResponse response;
+//                response = client.execute(post);
+                response = client.execute(get);
+
+                if (response.getEntity() != null) {
+                    try {
+//                        String result = EntityUtils.toString(entity);
+//                        entity.consumeContent();
+//                        return result;
+
+                        // Read the content stream
+                        InputStream instream = response.getEntity().getContent();
+                        Header contentEncoding = response.getFirstHeader("Content-Encoding");
+
+                        // convert content stream to a String
+                        String resultString= convertStreamToString(instream);
+                        instream.close();
+                        return resultString;
+
+                    } catch (IOException e) {
+                        Log.e(TAG, "IO E "+e);
+                        e.printStackTrace();
+                        return e.toString();
+                    }
+                }
 
             } catch (UnsupportedEncodingException e) {
-                Log.e("Error: UnsupportedEncodingException",""+e);
+                Log.e(TAG, "Error: UnsupportedEncodingException "+e);
                 e.printStackTrace();
+                return e.toString();
             } catch (JSONException js) {
                 Log.e("Error: JSONException",""+js);
                 js.printStackTrace();
-            }
-
-            HttpResponse response;
-
-            try {
-                response = client.execute(post);
-//                response = client.execute(get);
+                return js.toString();
             } catch (ClientProtocolException e) {
                 e.printStackTrace();
-                Log.e("ClientProtocol",""+e);
-                return null;
+                Log.e(TAG, "ClientProtocol "+e);
+                return e.toString();
             } catch (IOException e) {
                 e.printStackTrace();
-                Log.e("IO",""+e);
-                return null;
+                Log.e(TAG, "IO "+e);
+                return e.toString();
             }
 
-            HttpEntity entity = response.getEntity();
-
-            if (entity != null) {
-                try {
-                    String result = EntityUtils.toString(entity);
-                    entity.consumeContent();
-                    return result;
-                } catch (IOException e) {
-                    Log.e("IO E",""+e);
-                    e.printStackTrace();
-                }
-            }
             return "empty";
         }
 
@@ -202,9 +216,31 @@ public class MainActivity extends ActionBarActivity {
             // onPostExecute is called when doInBackground finished
             // Here you can for example fill your Listview with the content loaded in doInBackground method
             Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
-            Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
-            Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
+
             Log.e("SCCOP", result);
         }
+    }
+
+
+    private static String convertStreamToString(InputStream is) {
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+
+        String line = null;
+        try {
+            while ((line = reader.readLine()) != null) {
+                sb.append(line + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return sb.toString();
     }
 }
