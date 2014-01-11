@@ -39,22 +39,26 @@ public class MainActivity extends ActionBarActivity {
     private final String[] unitsList = new String[] {"1000/min", "Km/s", "C"};
     private String[] valuesList = new String[namesList.length];
     private Bluetooth bluetooth;
+    private final String API_URL = "http://sccop.herokuapp.com/api/log/add/?";
+    private String USERNAME = "01005574388";
+    private Api api;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Api api = new Api();
 
         ToggleButton toggleButton = (ToggleButton)findViewById(R.id.toggleButton);
         toggleButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 bluetooth = new Bluetooth(getApplicationContext(), "SCCOP-BT");
-                if (bluetooth.isConnected)
+                if (bluetooth.isConnected) {
                     myListenForData();
-
-                new updateOnlineDB().execute("");
-
+                } else {
+                    Toast.makeText(getApplicationContext(), "Please make sure Bluetooth is Turned On.", Toast.LENGTH_LONG).show();
+                }
             }
         });
 
@@ -108,6 +112,9 @@ public class MainActivity extends ActionBarActivity {
                                                 Toast.makeText(getApplicationContext(), "ID: "+id+" VALUE: "+value, Toast.LENGTH_LONG).show();
                                                 valuesList[id] = value;
                                                 onResume();
+                                                if (id == valuesList.length-1) {
+                                                    api.execute(namesList, valuesList);
+                                                }
                                             }
                                         }
                                     });
@@ -129,29 +136,36 @@ public class MainActivity extends ActionBarActivity {
     }
 
 
-    private class updateOnlineDB extends AsyncTask<String, Void, String> {
+    private class Api extends AsyncTask<String[], Void, String> {
         private static final String TAG = "SCCOP";
 
         @Override
-        protected String doInBackground(String... params) {
+        protected String doInBackground(String[]... params) {
             //Here you have to make the loading / parsing tasks
             //Don't call any UI actions here. For example a Toast.show() this will couse Exceptions
             // UI stuff you have to make in onPostExecute method
 
             DefaultHttpClient client = new DefaultHttpClient();
-            HttpGet get = new HttpGet("http://sccop.herokuapp.com/api/log/add/?username=01005574388&rpm=3452&speed=93&temp=27");
+            HttpGet get;
 //            HttpPost post = new HttpPost("http://sccop.herokuapp.com/mobile/update");
 
-            JSONObject holder = new JSONObject();
-            JSONObject projectObj = new JSONObject();
-            String name = params[0];
+//            JSONObject holder = new JSONObject();
+//            JSONObject projectObj = new JSONObject();
+//            String name = params[0];
 
             try {
-                projectObj.put("name", name);
-                holder.put("project", projectObj);
-                Log.e(TAG, "Event JSON = "+ holder.toString());
-                StringEntity se = new StringEntity(holder.toString());
-                se.setContentType(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
+                StringBuilder urlParams = new StringBuilder();
+                for (int i=0; i<params.length; i++) {
+                    urlParams.append(params[0][i] + "=" + params[1][i] + "&");
+                }
+                urlParams.append("username=" + USERNAME);
+                get = new HttpGet(API_URL + urlParams.toString());
+
+//                projectObj.put("name", name);
+//                holder.put("project", projectObj);
+//                Log.e(TAG, "Event JSON = "+ holder.toString());
+//                StringEntity se = new StringEntity(holder.toString());
+//                se.setContentType(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
 //                post.setEntity(se);
 //                post.setHeader("Accept", "application/json");
 //                post.setHeader("Content-Type","application/json");
@@ -169,7 +183,7 @@ public class MainActivity extends ActionBarActivity {
 
                         // Read the content stream
                         InputStream instream = response.getEntity().getContent();
-                        Header contentEncoding = response.getFirstHeader("Content-Encoding");
+//                        Header contentEncoding = response.getFirstHeader("Content-Encoding");
 
                         // convert content stream to a String
                         String resultString= convertStreamToString(instream);
@@ -187,10 +201,10 @@ public class MainActivity extends ActionBarActivity {
                 Log.e(TAG, "Error: UnsupportedEncodingException "+e);
                 e.printStackTrace();
                 return e.toString();
-            } catch (JSONException js) {
-                Log.e("Error: JSONException",""+js);
-                js.printStackTrace();
-                return js.toString();
+//            } catch (JSONException js) {
+//                Log.e("Error: JSONException",""+js);
+//                js.printStackTrace();
+//                return js.toString();
             } catch (ClientProtocolException e) {
                 e.printStackTrace();
                 Log.e(TAG, "ClientProtocol "+e);
