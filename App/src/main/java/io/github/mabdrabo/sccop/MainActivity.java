@@ -41,14 +41,12 @@ public class MainActivity extends ActionBarActivity {
     private Bluetooth bluetooth;
     private final String API_URL = "http://sccop.herokuapp.com/api/log/add/?";
     private String USERNAME = "01005574388";
-    private Api api;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Api api = new Api();
 
         ToggleButton toggleButton = (ToggleButton)findViewById(R.id.toggleButton);
         toggleButton.setOnClickListener(new View.OnClickListener() {
@@ -103,7 +101,7 @@ public class MainActivity extends ActionBarActivity {
                                     {
                                         public void run()
                                         {   // Final data is here
-                                            Toast.makeText(getApplicationContext(), "received: "+data, Toast.LENGTH_SHORT).show();
+//                                            Toast.makeText(getApplicationContext(), "received: "+data, Toast.LENGTH_SHORT).show();
                                             String regex = "^([0-9]+)=([0-9]+)$";
                                             Matcher matcher = Pattern.compile(regex).matcher(data);
                                             if (matcher.find()) {
@@ -113,7 +111,7 @@ public class MainActivity extends ActionBarActivity {
                                                 valuesList[id] = value;
                                                 onResume();
                                                 if (id == valuesList.length-1) {
-                                                    api.execute(namesList, valuesList);
+                                                    new Api().execute(namesList, valuesList);
                                                 }
                                             }
                                         }
@@ -147,43 +145,26 @@ public class MainActivity extends ActionBarActivity {
 
             DefaultHttpClient client = new DefaultHttpClient();
             HttpGet get;
-//            HttpPost post = new HttpPost("http://sccop.herokuapp.com/mobile/update");
-
-//            JSONObject holder = new JSONObject();
-//            JSONObject projectObj = new JSONObject();
-//            String name = params[0];
-
             try {
                 StringBuilder urlParams = new StringBuilder();
-                for (int i=0; i<params.length; i++) {
-                    urlParams.append(params[0][i] + "=" + params[1][i] + "&");
+                for (int i=0; i<params[0].length; i++) {
+                    String p = params[0][i].toLowerCase() + "=" + params[1][i];
+                    Log.e(TAG, "p"+i+": " + p);
+                    urlParams.append(p + "&");
                 }
                 urlParams.append("username=" + USERNAME);
-                get = new HttpGet(API_URL + urlParams.toString());
-
-//                projectObj.put("name", name);
-//                holder.put("project", projectObj);
-//                Log.e(TAG, "Event JSON = "+ holder.toString());
-//                StringEntity se = new StringEntity(holder.toString());
-//                se.setContentType(new BasicHeader(HTTP.CONTENT_TYPE, "application/json"));
-//                post.setEntity(se);
-//                post.setHeader("Accept", "application/json");
-//                post.setHeader("Content-Type","application/json");
+                String fullUrl = API_URL + urlParams.toString();
+                Log.e(TAG, "URL: " + fullUrl);
+                get = new HttpGet(fullUrl);
                 get.setHeader("Content-Type","application/json");
 
                 HttpResponse response;
-//                response = client.execute(post);
                 response = client.execute(get);
 
                 if (response.getEntity() != null) {
                     try {
-//                        String result = EntityUtils.toString(entity);
-//                        entity.consumeContent();
-//                        return result;
-
                         // Read the content stream
                         InputStream instream = response.getEntity().getContent();
-//                        Header contentEncoding = response.getFirstHeader("Content-Encoding");
 
                         // convert content stream to a String
                         String resultString= convertStreamToString(instream);
@@ -201,10 +182,6 @@ public class MainActivity extends ActionBarActivity {
                 Log.e(TAG, "Error: UnsupportedEncodingException "+e);
                 e.printStackTrace();
                 return e.toString();
-//            } catch (JSONException js) {
-//                Log.e("Error: JSONException",""+js);
-//                js.printStackTrace();
-//                return js.toString();
             } catch (ClientProtocolException e) {
                 e.printStackTrace();
                 Log.e(TAG, "ClientProtocol "+e);
