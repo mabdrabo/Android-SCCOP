@@ -89,7 +89,7 @@ public class Bluetooth {
             mmInputStream = mmSocket.getInputStream();
         } catch (IOException e) {
             e.printStackTrace();
-            Toast.makeText(ApplicationContext, "IO exception while connecting!", Toast.LENGTH_LONG).show();
+            Toast.makeText(ApplicationContext, "IO- please make sure SCCOP is turned on!", Toast.LENGTH_LONG).show();
         }
         if (mmInputStream != null && mmOutputStream != null) {
             Toast.makeText(ApplicationContext, "Connected to " + mmDevice.getName(), Toast.LENGTH_LONG).show();
@@ -176,6 +176,8 @@ public class Bluetooth {
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(ApplicationContext, "IO exception while closing!", Toast.LENGTH_LONG).show();
+        } catch (NullPointerException e) {
+
         }
         Toast.makeText(ApplicationContext, "Closed!", Toast.LENGTH_SHORT).show();
     }

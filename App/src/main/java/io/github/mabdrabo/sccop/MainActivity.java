@@ -35,12 +35,14 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends ActionBarActivity {
 
-    private final String[] namesList = new String[] {"RPM", "Speed", "Temp"};
-    private final String[] unitsList = new String[] {"1000/min", "Km/s", "C"};
+    private final String[] namesList = new String[] {"RPM", "Speed", "Temp", "Throttle", "Fuel", "Engine"};
+    private final String[] unitsList = new String[] {"1/min", "Km/s", "˚C", "%", "%", "%"};
     private String[] valuesList = new String[namesList.length];
     private Bluetooth bluetooth;
     private final String API_URL = "http://sccop.herokuapp.com/api/log/add/?";
     private String USERNAME = "01005574388";
+
+    ToggleButton toggleButton;
 
 
     @Override
@@ -48,14 +50,21 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ToggleButton toggleButton = (ToggleButton)findViewById(R.id.toggleButton);
+        toggleButton = (ToggleButton)findViewById(R.id.toggleButton);
         toggleButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                bluetooth = new Bluetooth(getApplicationContext(), "SCCOP-BT");
-                if (bluetooth.isConnected) {
-                    myListenForData();
+                if (toggleButton.isChecked()) {
+                    bluetooth = new Bluetooth(getApplicationContext(), "SCCOP-BT");
+                    if (bluetooth.isConnected) {
+                        myListenForData();
+                    } else {
+                        Toast.makeText(getApplicationContext(), "Please make sure Bluetooth is Turned On.", Toast.LENGTH_LONG).show();
+                        toggleButton.setChecked(false);
+                    }
                 } else {
-                    Toast.makeText(getApplicationContext(), "Please make sure Bluetooth is Turned On.", Toast.LENGTH_LONG).show();
+                    if (bluetooth != null) {
+                        bluetooth.close();
+                    }
                 }
             }
         });
