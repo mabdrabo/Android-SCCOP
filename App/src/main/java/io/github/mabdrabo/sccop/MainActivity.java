@@ -70,6 +70,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
                 } else {
                     if (bluetooth != null) {
                         bluetooth.close();
+                        bluetooth = null;
                     }
                 }
             }
@@ -85,7 +86,6 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
         GridView gridView = (GridView) findViewById(R.id.gridView);
         gridView.setAdapter(new GridItemAdapter(this, namesList, valuesList, unitsList) {
         });
-
     }
 
 
@@ -102,6 +102,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
             {
                 while(!Thread.currentThread().isInterrupted() && !bluetooth.stopWorker) {
                     try {
+                        if (bluetooth == null)
+                            break;
                         int bytesAvailable = bluetooth.mmInputStream.available();
                         if(bytesAvailable > 0) {
                             byte[] packetBytes = new byte[bytesAvailable];
@@ -214,14 +216,15 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
         protected void onPreExecute() {
             // This method will called during doInBackground is in process
             // Here you can for example show a ProgressDialog
-            Toast.makeText(getApplicationContext(), "processing", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(getApplicationContext(), "processing", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "processing");
         }
 
         @Override
         protected void onPostExecute(String result) {
             // onPostExecute is called when doInBackground finished
             // Here you can for example fill your Listview with the content loaded in doInBackground method
-            Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
+//            Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
 
             Log.e(TAG, result);
         }
