@@ -1,5 +1,8 @@
 package io.github.mabdrabo.sccop;
 
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,7 +36,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements LocationListener {
 
     private final String[] namesList = new String[] {"RPM", "Speed", "Temp", "Throttle", "Fuel", "Engine"};
     private final String[] unitsList = new String[] {"1/min", "Km/s", "˚C", "%", "%", "%"};
@@ -41,8 +44,10 @@ public class MainActivity extends ActionBarActivity {
     private Bluetooth bluetooth;
     private final String API_URL = "http://sccop.herokuapp.com/api/log/add/?";
     private String USERNAME = "01005574388";
-
+    private static final String TAG = "SCCOP";
     ToggleButton toggleButton;
+
+    private LocationManager locationManager;
 
 
     @Override
@@ -78,6 +83,8 @@ public class MainActivity extends ActionBarActivity {
         GridView gridView = (GridView) findViewById(R.id.gridView);
         gridView.setAdapter(new GridItemAdapter(this, namesList, valuesList, unitsList) {
         });
+        String[] loc = getLocation();
+        Log.e(TAG, loc[0] + " ,, " + loc[1]);
     }
 
 
@@ -144,7 +151,6 @@ public class MainActivity extends ActionBarActivity {
 
 
     private class Api extends AsyncTask<String[], Void, String> {
-        private static final String TAG = "SCCOP";
 
         @Override
         protected String doInBackground(String[]... params) {
@@ -217,7 +223,7 @@ public class MainActivity extends ActionBarActivity {
             // Here you can for example fill your Listview with the content loaded in doInBackground method
             Toast.makeText(getApplicationContext(), result, Toast.LENGTH_LONG).show();
 
-            Log.e("SCCOP", result);
+            Log.e(TAG, result);
         }
     }
 
@@ -243,4 +249,96 @@ public class MainActivity extends ActionBarActivity {
         }
         return sb.toString();
     }
+
+
+    public String[] getLocation()
+    {
+        String[] locationArray=new String[2];
+
+        locationManager = (LocationManager) MainActivity.this.getSystemService(LOCATION_SERVICE);
+        // getting network status
+        boolean  isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        boolean  isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+        // The minimum distance to change Updates in meters
+        final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10; // 10 meters
+
+        // The minimum time between updates in milliseconds
+        final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1; // 1 minute
+
+        if (isGPSEnabled) {
+            locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    MIN_TIME_BW_UPDATES,
+                    MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+            Log.d(TAG, "GPS location");
+            if (locationManager != null) {
+                Location location = locationManager
+                        .getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (location != null) {
+                    Log.d(TAG, "Last known GPS location");
+                    locationArray[0] = String.valueOf(location.getLatitude());
+                    locationArray[1] = String.valueOf(location.getLongitude());
+
+                }
+            }
+        } else {
+            if (isNetworkEnabled) {
+                locationManager.requestLocationUpdates(
+                        LocationManager.NETWORK_PROVIDER,
+                        MIN_TIME_BW_UPDATES,
+                        MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+                Log.d(TAG, "Network location");
+                if (locationManager != null) {
+                    Location location = locationManager
+                            .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                    if (location != null) {
+                        Log.d(TAG, "Last known Network location");
+                        locationArray[0] = String.valueOf(location.getLatitude());
+                        locationArray[1] = String.valueOf(location.getLongitude());
+
+                    }
+                }
+            }
+        }
+        return locationArray;
+
+    }
+
+
+    /**
+     * Stop using location listener
+     * Calling this function will stop using location updates in your app
+     * */
+    public void stopUsingLocationUpdates(){
+        if(locationManager != null){
+            locationManager.removeUpdates(MainActivity.this);
+        }
+    }
+
+
+    @Override
+    public void onLocationChanged(Location location) {
+        // TODO Auto-generated method stub
+        Log.e(TAG, "new location " + location.getLatitude() + " , " + location.getLongitude());
+    }
+
+    @Override
+    public void onProviderDisabled(String arg0) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onProviderEnabled(String arg0) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void onStatusChanged(String arg0, int arg1, Bundle arg2) {
+        // TODO Auto-generated method stub
+
+    }
+
 }
