@@ -42,8 +42,9 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
     private final String[] unitsList = new String[] {"1/min", "Km/s", "˚C", "%", "%", "%"};
     private String[] valuesList = new String[namesList.length];
     private Bluetooth bluetooth;
-    private final String API_URL = "http://sccop.herokuapp.com/api/log/add/?";
-    private String USERNAME = "01005574388";
+    private final String UPDATE_STATE_URL = "http://sccop.herokuapp.com/api/update/state/?";
+    private final String UPDATE_LOCATION_URL = "http://sccop.herokuapp.com/api/update/location/?";
+    private String USERNAME = "mabdrabo";
     private static final String TAG = "SCCOP";
     ToggleButton toggleButton;
 
@@ -73,7 +74,8 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
                 }
             }
         });
-
+        String[] loc = getLocation();
+        Log.e(TAG, loc[0] + " ,, " + loc[1]);
     }
 
 
@@ -83,8 +85,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
         GridView gridView = (GridView) findViewById(R.id.gridView);
         gridView.setAdapter(new GridItemAdapter(this, namesList, valuesList, unitsList) {
         });
-        String[] loc = getLocation();
-        Log.e(TAG, loc[0] + " ,, " + loc[1]);
+
     }
 
 
@@ -117,17 +118,16 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
                                     {
                                         public void run()
                                         {   // Final data is here
-//                                            Toast.makeText(getApplicationContext(), "received: "+data, Toast.LENGTH_SHORT).show();
                                             String regex = "^([0-9]+)=([0-9]+)$";
                                             Matcher matcher = Pattern.compile(regex).matcher(data);
                                             if (matcher.find()) {
                                                 int id = Integer.parseInt(matcher.group(1));
                                                 String value = matcher.group(2);
-                                                Toast.makeText(getApplicationContext(), "ID: "+id+" VALUE: "+value, Toast.LENGTH_LONG).show();
+                                                Log.e(TAG, "ID: " + id + " VALUE: " + value);
                                                 valuesList[id] = value;
                                                 onResume();
                                                 if (id == valuesList.length-1) {
-                                                    new Api().execute(namesList, valuesList);
+                                                    new Api().execute(namesList, valuesList, new String[]{UPDATE_STATE_URL});
                                                 }
                                             }
                                         }
@@ -168,7 +168,7 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
                     urlParams.append(p + "&");
                 }
                 urlParams.append("username=" + USERNAME);
-                String fullUrl = API_URL + urlParams.toString();
+                String fullUrl = params[2][0] + urlParams.toString();
                 Log.e(TAG, "URL: " + fullUrl);
                 get = new HttpGet(fullUrl);
                 get.setHeader("Content-Type","application/json");
@@ -301,6 +301,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
                 }
             }
         }
+        new Api().execute(
+                new String[] {"lon", "lat"},
+                new String[] {""+locationArray[1], ""+locationArray[0]},
+                new String[] {UPDATE_LOCATION_URL});
         return locationArray;
 
     }
@@ -321,6 +325,10 @@ public class MainActivity extends ActionBarActivity implements LocationListener 
     public void onLocationChanged(Location location) {
         // TODO Auto-generated method stub
         Log.e(TAG, "new location " + location.getLatitude() + " , " + location.getLongitude());
+        new Api().execute(
+                new String[] {"lon", "lat"},
+                new String[] {""+location.getLongitude(), ""+location.getLatitude()},
+                new String[] {UPDATE_LOCATION_URL});
     }
 
     @Override
